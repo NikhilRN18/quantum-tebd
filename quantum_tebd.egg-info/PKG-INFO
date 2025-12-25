@@ -1,0 +1,22 @@
+Metadata-Version: 2.4
+Name: quantum-tebd
+Version: 0.1.0
+Summary: Fast classical simulator for 1D quantum systems using MPS/TEBD
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: numpy>=1.26
+Requires-Dist: scipy>=1.11
+Requires-Dist: matplotlib>=3.8
+Requires-Dist: pytest>=8.0
+Requires-Dist: tqdm>=4.66
+
+# quantum-tebd
+
+A classical simulator for 1D quantum many-body systems using Matrix Product States (MPS) and TEBD time evolution.
+
+## Setup
+
+```bash
+python -m venv .venv
+source .venv/bin/activate  
+pip install -e .

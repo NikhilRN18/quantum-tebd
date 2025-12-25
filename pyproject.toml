@@ -1,0 +1,24 @@
+[project]
+name = "quantum-tebd"
+version = "0.1.0"
+description = "Fast classical simulator for 1D quantum systems using MPS/TEBD"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.26",
+  "scipy>=1.11",
+  "matplotlib>=3.8",
+  "pytest>=8.0",
+  "tqdm>=4.66"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["mps", "models", "exact"]
