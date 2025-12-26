@@ -128,3 +128,17 @@ class MPS:
         """
         psi = self.to_dense()
         return np.linalg.norm(psi)
+    
+    def apply_one_site_gate(self, i, G):
+        """
+        Apply a 1-site gate G (2x2) to site i in-place.
+        G acts on the physical index.
+        """
+        A = self.tensors[i]  # (bl, 2, br)
+        if G.shape != (2, 2):
+            raise ValueError("One-site gate must be 2x2")
+
+        # Contract: A'(bl, s', br) = sum_s G(s',s) A(bl,s,br)
+        A_new = np.tensordot(G, A, axes=(1, 1))  # (2, bl, br)
+        A_new = np.transpose(A_new, (1, 0, 2))   # (bl, 2, br)
+        self.tensors[i] = A_new
