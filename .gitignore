@@ -1,0 +1,40 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ---- Virtual environments ----
+.venv/
+venv/
+ENV/
+env/
+
+# ---- Python packaging/build ----
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# ---- Pytest ----
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ---- Jupyter ----
+.ipynb_checkpoints/
+
+# ---- IDE/editor ----
+.vscode/
+.idea/
+*.swp
+
+# ---- macOS ----
+.DS_Store
+
+# ---- Logs / data / outputs (optional, keep if you generate these) ----
+*.log
+*.png
+*.pdf
+outputs/
+results/
