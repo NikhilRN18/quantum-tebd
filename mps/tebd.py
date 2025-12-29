@@ -1,7 +1,7 @@
 import numpy as np
 from mps.truncation import svd_truncate
 from models.ising import ising_one_site_gate, ising_two_site_gate
-
+from mps.entropy import entanglement_entropy_from_singular_values
 
 
 def apply_two_site_gate(mps, i, U, chi_max=None):
@@ -70,7 +70,8 @@ def apply_two_site_gate(mps, i, U, chi_max=None):
     mps.tensors[i] = A_new
     mps.tensors[i + 1] = B_new
 
-    return trunc_error
+    ent = entanglement_entropy_from_singular_values(S)
+    return trunc_error, ent
 
 def tebd_step_ising(mps, J, h, dt, chi_max=None):
     """
@@ -80,7 +81,7 @@ def tebd_step_ising(mps, J, h, dt, chi_max=None):
         total_trunc_error (float): sum of truncation errors from gate applications
     """
     total_trunc = 0.0
-
+    bond_entropy = [0.0] * (mps.n - 1)
     # 1) half-step on-site X gates
     Ux_half = ising_one_site_gate(h=h, dt=dt / 2.0)
     for i in range(mps.n):
@@ -89,14 +90,17 @@ def tebd_step_ising(mps, J, h, dt, chi_max=None):
     # 2) full-step ZZ gates on even bonds
     Uzz = ising_two_site_gate(J=J, dt=dt)
     for i in range(0, mps.n - 1, 2):
-        total_trunc += apply_two_site_gate(mps, i, Uzz, chi_max=chi_max)
+        trunc, ent = apply_two_site_gate(mps, i, Uzz, chi_max=chi_max)
+        total_trunc += trunc
+        bond_entropy[i] = ent   
 
     # 3) full-step ZZ gates on odd bonds
     for i in range(1, mps.n - 1, 2):
-        total_trunc += apply_two_site_gate(mps, i, Uzz, chi_max=chi_max)
-
+        trunc, ent = apply_two_site_gate(mps, i, Uzz, chi_max=chi_max)
+        total_trunc += trunc
+        bond_entropy[i] = ent
     # 4) half-step on-site X gates again
     for i in range(mps.n):
         mps.apply_one_site_gate(i, Ux_half)
 
-    return total_trunc
+    return total_trunc, bond_entropy

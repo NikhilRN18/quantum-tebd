@@ -27,6 +27,8 @@ def main():
     times = []
     mags = []
     truncs = []
+    entropy_max = []
+    entropy_mid = []
 
     t = 0.0
     for step in range(args.steps + 1):
@@ -34,8 +36,13 @@ def main():
         mags.append(magnetization_z(mps))
 
         if step < args.steps:
-            trunc = tebd_step_ising(mps, J=args.J, h=args.h, dt=args.dt, chi_max=args.chi)
+            trunc, entropies = tebd_step_ising(mps, J=args.J, h=args.h, dt=args.dt, chi_max=args.chi)
             truncs.append(trunc)
+
+            entropy_max.append(max(entropies))
+            mid_bond = (args.n - 1) // 2
+            entropy_mid.append(entropies[mid_bond])
+
             t += args.dt
 
     print("Final <Z> =", mags[-1])
@@ -45,6 +52,22 @@ def main():
     plt.xlabel("time")
     plt.ylabel("average <Z>")
     plt.title(f"TFIM TEBD: n={args.n}, J={args.J}, h={args.h}, dt={args.dt}, chi={args.chi}")
+    plt.show()
+
+    plt.figure()
+    plt.plot(times[1:], entropy_max, label="max bond entropy")
+    plt.plot(times[1:], entropy_mid, label="middle bond entropy")
+    plt.xlabel("time")
+    plt.ylabel("entanglement entropy (nats)")
+    plt.title("Entanglement growth during TEBD")
+    plt.legend()
+    plt.show()
+
+    plt.figure()
+    plt.plot(times[1:], truncs)
+    plt.xlabel("time")
+    plt.ylabel("sum truncation error (per step)")
+    plt.title("Truncation error during TEBD")
     plt.show()
 
 

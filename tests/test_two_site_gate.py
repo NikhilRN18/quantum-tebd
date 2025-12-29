@@ -16,11 +16,11 @@ def test_identity_gate_does_not_change_state():
     psi_before = m.to_dense()
 
     I4 = np.eye(4, dtype=np.complex128)
-    trunc = apply_two_site_gate(m, i=1, U=I4, chi_max=10)
-
+    trunc, ent = apply_two_site_gate(m, i=1, U=I4, chi_max=10)
     psi_after = m.to_dense()
 
     assert trunc == 0.0
+    assert abs(ent) < 1e-12
     assert np.allclose(psi_before, psi_after)
 
 
@@ -43,7 +43,7 @@ def test_cnot_gate_changes_state_correctly():
         dtype=np.complex128,
     )
 
-    trunc = apply_two_site_gate(m, i=1, U=CNOT, chi_max=10)
+    trunc, ent = apply_two_site_gate(m, i=1, U=CNOT, chi_max=10)
     psi_after = m.to_dense()
 
     # Exact dense calculation:
@@ -82,8 +82,8 @@ def test_truncation_limits_bond_dimension():
         dtype=np.complex128,
     )
 
-    apply_two_site_gate(m, i=0, U=HI, chi_max=10)
-    apply_two_site_gate(m, i=0, U=CNOT, chi_max=10)
+    _, _ = apply_two_site_gate(m, i=0, U=HI, chi_max=10)
+    _, _ = apply_two_site_gate(m, i=0, U=CNOT, chi_max=10)
 
     # Now the state should be entangled, so bond dim should be 2
     dims_before = m.bond_dims()
@@ -91,7 +91,7 @@ def test_truncation_limits_bond_dimension():
 
     # Now apply identity but force chi_max=1 (truncate hard)
     I4 = np.eye(4, dtype=np.complex128)
-    trunc = apply_two_site_gate(m, i=0, U=I4, chi_max=1)
+    trunc, ent = apply_two_site_gate(m, i=0, U=I4, chi_max=1)
 
     dims_after = m.bond_dims()
     assert dims_after == [1, 1, 1]
