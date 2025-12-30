@@ -29,6 +29,7 @@ def main():
     truncs = []
     entropy_max = []
     entropy_mid = []
+    entropy_history = []
 
     t = 0.0
     for step in range(args.steps + 1):
@@ -42,6 +43,7 @@ def main():
             entropy_max.append(max(entropies))
             mid_bond = (args.n - 1) // 2
             entropy_mid.append(entropies[mid_bond])
+            entropy_history.append(entropies)
 
             t += args.dt
 
@@ -70,6 +72,20 @@ def main():
     plt.title("Truncation error during TEBD")
     plt.show()
 
+    entropy_arr = np.array(entropy_history)  
+
+    plt.figure()
+    plt.imshow(
+        entropy_arr.T,   
+        aspect="auto",
+        origin="lower",
+        interpolation="nearest",
+    )
+    plt.colorbar(label="entanglement entropy (nats)")
+    plt.xlabel("time step")
+    plt.ylabel("bond index (cut between i and i+1)")
+    plt.title("Entanglement entropy heatmap (bond vs time)")
+    plt.show()
 
 if __name__ == "__main__":
     main()
