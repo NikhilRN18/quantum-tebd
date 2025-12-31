@@ -32,9 +32,3 @@ htmlcov/
 # ---- macOS ----
 .DS_Store
 
-# ---- Logs / data / outputs (optional, keep if you generate these) ----
-*.log
-*.png
-*.pdf
-outputs/
-results/
