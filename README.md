@@ -1,8 +1,8 @@
 # Quantum TEBD Simulator (MPS-based)
 
-A classical simulator for 1D quantum many-body systems using **Matrix Product States (MPS)** and **Time-Evolving Block Decimation (TEBD)**.
+A classical simulator for 1D quantum many-body systems using Matrix Product States (MPS) and Time-Evolving Block Decimation (TEBD).
 
-This repository implements TEBD from scratch (tensor contractions, SVD-based refactorization, truncation strategies), validates the simulator against exact diagonalization (ED) for small system sizes, and benchmarks the accuracy–cost tradeoffs that arise from finite bond dimension \(\chi\) and finite Trotter time step \(\Delta t\). It also includes entanglement entropy tracking (per bond) to diagnose when and where the simulation becomes truncation-limited.
+This repository implements TEBD from scratch (tensor contractions, SVD-based refactorization, truncation strategies), validates the simulator against exact diagonalization (ED) for small system sizes, and benchmarks the accuracy–cost tradeoffs that arise from finite bond dimension chi and finite Trotter time step dt. It also includes entanglement entropy tracking (per bond) to diagnose when and where the simulation becomes truncation-limited.
 
 ---
 
@@ -10,17 +10,17 @@ This repository implements TEBD from scratch (tensor contractions, SVD-based ref
 
 The project has three core components:
 
-1. **MPS representation**  
+1) **MPS representation**  
    Efficient storage of a quantum state on a 1D chain as a product of local tensors, avoiding the exponential cost of a full state vector when entanglement is limited.
 
-2. **TEBD time evolution**  
+2) **TEBD time evolution**  
    Simulation of unitary time evolution under a local Hamiltonian using a second-order (Strang) Suzuki–Trotter decomposition into local gates. Each two-site gate update uses SVD to restore the MPS factorization and truncates the bond dimension to control computational cost.
 
-3. **Validation and benchmarking**  
-   For small \(N\), ED provides a ground-truth baseline. We use it to quantify:
-   - **Trotter error** as a function of \(\Delta t\)
-   - **Truncation error** as a function of \(\chi\)
-   - Runtime scaling versus \(N\) for TEBD compared to ED  
+3) **Validation and benchmarking**  
+   For small N, ED provides a ground-truth baseline. We use it to quantify:
+   - **Trotter error** as a function of dt
+   - **Truncation error** as a function of chi
+   - Runtime scaling versus N for TEBD compared to ED  
    We additionally measure **entanglement entropy** to explain why and when truncation becomes necessary.
 
 ---
@@ -29,22 +29,18 @@ The project has three core components:
 
 We simulate the 1D Transverse Field Ising Model (TFIM) with open boundary conditions:
 
-\[
-H = -J \sum_{i=0}^{N-2} Z_i Z_{i+1} \;-\; h \sum_{i=0}^{N-1} X_i
-\]
+![TFIM Hamiltonian](assets/equations/hamiltonian.png)
 
 where:
-- \(J\) sets the nearest-neighbor interaction strength
-- \(h\) sets the transverse field strength
-- \(Z\), \(X\) are Pauli operators
+- J sets the nearest-neighbor interaction strength
+- h sets the transverse field strength
+- Z, X are Pauli operators
 
 Time evolution is governed by:
 
-\[
-|\psi(t+\Delta t)\rangle = e^{-iH\Delta t}|\psi(t)\rangle
-\]
+![Time evolution](assets/equations/time_evolution.png)
 
-In TEBD, we approximate \(e^{-iH\Delta t}\) using a **second-order Trotter scheme** and apply local gates sequentially.
+In TEBD, we approximate exp(-i H dt) using a second-order Trotter scheme and apply local gates sequentially.
 
 ---
 
@@ -52,60 +48,47 @@ In TEBD, we approximate \(e^{-iH\Delta t}\) using a **second-order Trotter schem
 
 ### Matrix Product States (MPS)
 
-An \(N\)-qubit state has \(2^N\) amplitudes in the computational basis, which becomes infeasible beyond modest \(N\). An MPS expresses the same state as a chain of tensors:
+An N-qubit state has 2^N amplitudes in the computational basis, which becomes infeasible beyond modest N. An MPS expresses the same state as a chain of tensors:
 
-- Each site tensor \(A^{[i]}\) has shape \((\chi_{i-1}, 2, \chi_i)\)
-- The bond dimensions \(\chi_i\) control representational power
-- The maximum bond dimension \(\chi\) is the primary accuracy–cost knob
+- Each site tensor A[i] has shape (chi_{i-1}, 2, chi_i)
+- The bond dimensions chi_i control representational power
+- The maximum bond dimension chi is the primary accuracy–cost knob
 
-MPS is efficient for many 1D systems because low-energy states and short-time evolutions often obey an entanglement area law, meaning the required \(\chi\) grows slowly with \(N\) and time (until entanglement becomes large).
+MPS is efficient for many 1D systems because low-energy states and short-time evolutions often obey an entanglement area law, meaning the required chi grows slowly with N and time (until entanglement becomes large).
 
 ### TEBD
 
 TEBD exploits locality: the TFIM Hamiltonian decomposes into nearest-neighbor interaction terms plus on-site field terms. Using Strang splitting:
 
-\[
-e^{-iH\Delta t} \approx
-e^{-iH_X\Delta t/2}
-\left(
-\prod_{\text{even } i} e^{-ih_{i,i+1}\Delta t}
-\right)
-\left(
-\prod_{\text{odd } i} e^{-ih_{i,i+1}\Delta t}
-\right)
-e^{-iH_X\Delta t/2}
-\]
+exp(-i H dt) ≈ exp(-i Hx dt/2) * (prod_even exp(-i h_{i,i+1} dt)) * (prod_odd exp(-i h_{i,i+1} dt)) * exp(-i Hx dt/2)
 
 where:
-- \(H_X = -h \sum_i X_i\) (one-site gates)
-- \(h_{i,i+1} = -J Z_i Z_{i+1}\) (two-site gates)
+- Hx = -h * sum_i X_i (one-site gates)
+- h_{i,i+1} = -J * Z_i Z_{i+1} (two-site gates)
 
 Each two-site update:
-1. contracts two neighboring tensors into a rank-4 object \(\Theta\)
-2. applies the two-site unitary gate on physical indices
-3. reshapes \(\Theta\) into a matrix and performs SVD
-4. truncates to \(\chi_{\max}\) to control cost
-5. records truncation error and entanglement entropy from singular values
+1) contracts two neighboring tensors into a rank-4 object Theta
+2) applies the two-site unitary gate on physical indices
+3) reshapes Theta into a matrix and performs SVD
+4) truncates to chi_max to control cost
+5) records truncation error and entanglement entropy from singular values
 
 ---
 
 ## Entanglement Entropy Tracking
 
-Given the singular values \(s_k\) from the SVD on a bond, we compute the Von Neumann entanglement entropy:
+Given the singular values s_k from the SVD on a bond, we compute the Von Neumann entanglement entropy:
 
-\[
-p_k = \frac{s_k^2}{\sum_j s_j^2}, \qquad
-S = -\sum_k p_k \log p_k
-\]
+![Entanglement entropy](assets/equations/entropy.png)
 
 Entropy is tracked:
-- per bond (cut between \(i\) and \(i+1\))
+- per bond (cut between i and i+1)
 - over time during TEBD evolution
 
 This provides a diagnostic for:
 - where entanglement is concentrated
 - when the simulation becomes truncation-limited
-- why increasing \(\chi\) improves accuracy (until truncation disappears)
+- why increasing chi improves accuracy (until truncation disappears)
 
 ---
 
@@ -134,7 +117,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-If you have a `pyproject.toml` with editable install support:
+If you have a pyproject.toml with editable install support:
 
 ```bash
 pip install -e .
@@ -153,9 +136,9 @@ PYTHONPATH=. python scripts/run_ising_tebd.py \
 ```
 
 This script produces:
-- magnetization \(\langle Z \rangle\) vs time
+- magnetization <Z> vs time
 - entanglement entropy vs time (max and middle bond)
-- entanglement entropy heatmap (bond index × time)
+- entanglement entropy heatmap (bond index x time)
 
 ### Compare TEBD vs Exact (ED)
 
@@ -183,7 +166,7 @@ Tests include:
 - gate application correctness (including comparisons to dense evolution for small cases)
 - TEBD norm preservation
 - TEBD vs ED agreement within tolerance
-- entanglement entropy correctness (Bell state entropy \(\approx \ln(2)\))
+- entanglement entropy correctness (Bell state entropy ≈ ln(2))
 
 ---
 
@@ -197,77 +180,72 @@ PYTHONPATH=. python scripts/run_all_benchmarks.py
 
 This regenerates all plots in `figures/`.
 
-### Benchmark 1: Error vs Bond Dimension \(\chi\)
+### Benchmark 1: Error vs Bond Dimension chi
 
-**Files**
-- `figures/error_vs_chi.png`
-- `figures/trunc_vs_chi.png`
-- `figures/runtime_vs_chi.png`
+Files:
+- figures/error_vs_chi.png
+- figures/trunc_vs_chi.png
+- figures/runtime_vs_chi.png
 
-**Method**
-- Fix system size \(N=8\), \(\Delta t=0.05\), steps=60, \(J=1\), \(h=1\)
+Method:
+- Fix N=8, dt=0.05, steps=60, J=1, h=1
 - Compute exact magnetization curve using ED
-- Run TEBD for a sweep of \(\chi\) values
-- Measure max absolute error:
-  \[
-  \max_t \left|\langle Z \rangle_{\text{TEBD}}(t) - \langle Z \rangle_{\text{ED}}(t)\right|
-  \]
+- Run TEBD for a sweep of chi values
+- Measure max absolute error: max_t | <Z>_TEBD(t) - <Z>_ED(t) |
 - Track total truncation error (sum over TEBD steps)
 
-**Observed behavior (representative run)**
-- \(\chi=2\): max error \(\approx 2.545\times 10^{-1}\), truncation sum \(\approx 1.455\times 10^{-1}\)
-- \(\chi=4\): max error \(\approx 4.996\times 10^{-2}\), truncation sum \(\approx 5.946\times 10^{-2}\)
-- \(\chi=8\): max error \(\approx 5.945\times 10^{-3}\), truncation sum \(\approx 3.214\times 10^{-3}\)
-- \(\chi\ge 16\): truncation sum \(\approx 0\), error saturates \(\approx 1.795\times 10^{-3}\)
+Observed behavior (representative run):
+- chi=2: max error ≈ 2.545e-1, truncation sum ≈ 1.455e-1
+- chi=4: max error ≈ 4.996e-2, truncation sum ≈ 5.946e-2
+- chi=8: max error ≈ 5.945e-3, truncation sum ≈ 3.214e-3
+- chi>=16: truncation sum ≈ 0, error saturates ≈ 1.795e-3
 
-**Interpretation**
-- For small \(\chi\), truncation dominates: the MPS cannot represent the entanglement produced by time evolution, so singular values are discarded and the state deviates from the exact result.
-- As \(\chi\) increases, truncation decreases rapidly; once truncation error reaches zero, increasing \(\chi\) no longer improves accuracy.
-- The plateau at \(\chi \ge 16\) indicates the remaining error is primarily **Trotter error** rather than MPS truncation.
+Interpretation:
+- For small chi, truncation dominates: the MPS cannot represent the entanglement produced by time evolution, so singular values are discarded and the state deviates from the exact result.
+- As chi increases, truncation decreases rapidly; once truncation error reaches zero, increasing chi no longer improves accuracy.
+- The plateau at chi >= 16 indicates the remaining error is primarily Trotter error rather than MPS truncation.
 
-### Benchmark 2: Error vs Time Step \(\Delta t\) (Trotter Error)
+### Benchmark 2: Error vs Time Step dt (Trotter Error)
 
-**Files**
-- `figures/error_vs_dt.png`
-- `figures/runtime_vs_dt.png`
+Files:
+- figures/error_vs_dt.png
+- figures/runtime_vs_dt.png
 
-**Method**
-- Fix \(N=8\), steps=60, \(\chi=64\) (chosen so truncation \(\approx 0\))
-- Sweep \(\Delta t\in \{0.10, 0.05, 0.02, 0.01\}\)
+Method:
+- Fix N=8, steps=60, chi=64 (chosen so truncation ≈ 0)
+- Sweep dt in {0.10, 0.05, 0.02, 0.01}
 - Compare TEBD against ED as above
 
-**Observed behavior (representative run)**
-- \(\Delta t=0.10\): error \(\approx 7.157\times 10^{-3}\)
-- \(\Delta t=0.05\): error \(\approx 1.795\times 10^{-3}\)
-- \(\Delta t=0.02\): error \(\approx 2.869\times 10^{-4}\)
-- \(\Delta t=0.01\): error \(\approx 6.80\times 10^{-5}\)
+Observed behavior (representative run):
+- dt=0.10: error ≈ 7.157e-3
+- dt=0.05: error ≈ 1.795e-3
+- dt=0.02: error ≈ 2.869e-4
+- dt=0.01: error ≈ 6.80e-5
 
-**Interpretation**
-- Error decreases rapidly as \(\Delta t\) decreases, consistent with a second-order Strang splitting scheme.
-- Because truncation \(\approx 0\) across all runs, this benchmark isolates the error source to the Trotter approximation alone.
-- In practice, the best \(\Delta t\) depends on the desired accuracy and runtime budget, since smaller \(\Delta t\) requires more steps to reach the same physical time.
+Interpretation:
+- Error decreases rapidly as dt decreases, consistent with a second-order Strang splitting scheme.
+- Because truncation ≈ 0 across all runs, this benchmark isolates the error source to the Trotter approximation alone.
+- In practice, the best dt depends on the desired accuracy and runtime budget, since smaller dt requires more steps to reach the same physical time.
 
-### Benchmark 3: Runtime Scaling vs System Size \(N\) (TEBD vs ED)
+### Benchmark 3: Runtime Scaling vs System Size N (TEBD vs ED)
 
-**File**
-- `figures/runtime_vs_n.png`
+File:
+- figures/runtime_vs_n.png
 
-**Method**
-- Fix \(\Delta t=0.05\), steps=50, \(\chi=32\), \(J=1\), \(h=1\)
-- Measure wall-clock runtime for:
-  - TEBD evolution
-  - Exact diagonalization evolution (up to \(N\) where feasible)
-- Plot runtime on a log scale versus \(N\)
+Method:
+- Fix dt=0.05, steps=50, chi=32, J=1, h=1
+- Measure wall-clock runtime for TEBD evolution and exact diagonalization evolution (up to N where feasible)
+- Plot runtime on a log scale versus N
 
-**Observed behavior (representative run)**
-- \(N=10\): TEBD \(\approx 0.0377\) s, ED \(\approx 0.3180\) s
-- \(N=12\): TEBD \(\approx 0.0960\) s, ED \(\approx 15.10\) s
-- \(N=14\): TEBD \(\approx 0.1721\) s, ED \(\approx 1055.93\) s
+Observed behavior (representative run):
+- N=10: TEBD ≈ 0.0377 s, ED ≈ 0.3180 s
+- N=12: TEBD ≈ 0.0960 s, ED ≈ 15.10 s
+- N=14: TEBD ≈ 0.1721 s, ED ≈ 1055.93 s
 
-**Interpretation**
-- ED scales exponentially with \(N\) because it operates on \(2^N \times 2^N\) matrices.
-- TEBD scales far more gently because it operates locally and its complexity is primarily driven by \(\chi\) rather than \(2^N\).
-- This benchmark demonstrates the regime where tensor-network methods become essential: beyond modest \(N\), ED becomes infeasible while TEBD continues to run.
+Interpretation:
+- ED scales exponentially with N because it operates on 2^N x 2^N matrices.
+- TEBD scales far more gently because it operates locally and its complexity is primarily driven by chi rather than 2^N.
+- This benchmark demonstrates the regime where tensor-network methods become essential: beyond modest N, ED becomes infeasible while TEBD continues to run.
 
 ### Entanglement Diagnostics
 
@@ -279,12 +257,16 @@ The TEBD simulation script produces:
 Key observed patterns:
 - Starting from a product state, entanglement grows rapidly under TFIM evolution.
 - The entropy heatmap shows the strongest entanglement developing in the middle bonds (for open boundary conditions).
-- Entropy saturates near \(\ln(\chi)\), which directly demonstrates the representational limit imposed by finite bond dimension.
+- Entropy saturates near ln(chi), which directly demonstrates the representational limit imposed by finite bond dimension.
 - This provides a concrete diagnostic linking simulation accuracy to the entanglement structure of the evolving state.
+
+---
 
 ## Limitations
 
-- Current observable computation converts the MPS to a dense state (`to_dense()`) for simplicity in small-\(N\) validation workflows. This is not scalable for large \(N\).
-- Exact diagonalization is only used for small \(N\) due to exponential memory/time cost.
-- The simulator currently targets open boundary conditions and qubit physical dimension \(d=2\).
+- Current observable computation converts the MPS to a dense state (to_dense()) for simplicity in small-N validation workflows. This is not scalable for large N.
+- Exact diagonalization is only used for small N due to exponential memory/time cost.
+- The simulator currently targets open boundary conditions and qubit physical dimension d=2.
+
+---
 
