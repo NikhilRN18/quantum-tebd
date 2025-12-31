@@ -13,7 +13,14 @@ from exact.exact_diag import (
     basis_state,
     magnetization_z_dense,
 )
+import os
 
+def maybe_savefig(save, outdir, filename):
+    if save:
+        os.makedirs(outdir, exist_ok=True)
+        path = os.path.join(outdir, filename)
+        plt.savefig(path, dpi=200, bbox_inches="tight")
+        print(f"Saved: {path}")
 
 def run_tebd(n, J, h, dt, steps, chi, state):
     mps = MPS.product_state(state)
@@ -55,6 +62,9 @@ def main():
     parser.add_argument("--state", type=str, default="00000000")
 
     parser.add_argument("--chis", type=str, default="2,4,8,16,32,64")
+    parser.add_argument("--save", action="store_true", help="save plots to files")
+    parser.add_argument("--outdir", type=str, default="figures", help="output directory for plots")
+    parser.add_argument("--no_show", action="store_true", help="do not display plots")
     args = parser.parse_args()
 
     if len(args.state) != args.n:
@@ -94,7 +104,11 @@ def main():
     plt.ylabel("max |<Z>_TEBD - <Z>_exact|")
     plt.title(f"Error vs chi (n={args.n}, dt={args.dt}, steps={args.steps})")
     plt.grid(True, which="both", linestyle="--", linewidth=0.5)
-    plt.show()
+    maybe_savefig(args.save, args.outdir, "error_vs_chi.png")
+    if not args.no_show:
+        plt.show()
+    else:
+        plt.close()
 
     # --- Plot: truncation sum vs chi ---
     plt.figure()
@@ -105,7 +119,11 @@ def main():
     plt.ylabel("sum truncation errors")
     plt.title("Truncation vs chi")
     plt.grid(True, which="both", linestyle="--", linewidth=0.5)
-    plt.show()
+    maybe_savefig(args.save, args.outdir, "trunc_vs_chi.png")
+    if not args.no_show:
+        plt.show()
+    else:
+        plt.close()
 
     # --- Plot: runtime vs chi ---
     plt.figure()
@@ -115,7 +133,11 @@ def main():
     plt.ylabel("runtime (seconds)")
     plt.title("Runtime vs chi")
     plt.grid(True, which="both", linestyle="--", linewidth=0.5)
-    plt.show()
+    maybe_savefig(args.save, args.outdir, "runtime_vs_chi.png")
+    if not args.no_show:
+        plt.show()
+    else:
+        plt.close()
 
 
 if __name__ == "__main__":

@@ -14,6 +14,15 @@ from exact.exact_diag import (
     magnetization_z_dense,
 )
 
+import os
+
+def maybe_savefig(save, outdir, filename):
+    if save:
+        os.makedirs(outdir, exist_ok=True)
+        path = os.path.join(outdir, filename)
+        plt.savefig(path, dpi=200, bbox_inches="tight")
+        print(f"Saved: {path}")
+
 
 def run_tebd(n, J, h, dt, steps, chi, state):
     mps = MPS.product_state(state)
@@ -51,6 +60,9 @@ def main():
     parser.add_argument("--state", type=str, default="00000000")
 
     parser.add_argument("--dts", type=str, default="0.10,0.05,0.02,0.01")
+    parser.add_argument("--save", action="store_true", help="save plots to files")
+    parser.add_argument("--outdir", type=str, default="figures", help="output directory for plots")
+    parser.add_argument("--no_show", action="store_true", help="do not display plots")
     args = parser.parse_args()
 
     if len(args.state) != args.n:
@@ -88,18 +100,31 @@ def main():
     plt.ylabel("max |<Z>_TEBD - <Z>_exact|")
     plt.title(f"Error vs dt (n={args.n}, chi={args.chi}, steps={args.steps})")
     plt.grid(True, which="both", linestyle="--", linewidth=0.5)
-    plt.show()
+    maybe_savefig(args.save, args.outdir, "error_vs_dt.png")
+    if not args.no_show:
+        plt.show()
+    else:
+        plt.close()
 
     # --- Plot: truncation vs dt ---
-    plt.figure()
-    plt.plot(dts, trunc_sums, marker="o")
-    plt.xscale("log")
-    plt.yscale("log")
-    plt.xlabel("time step dt")
-    plt.ylabel("sum truncation errors")
-    plt.title("Truncation vs dt")
-    plt.grid(True, which="both", linestyle="--", linewidth=0.5)
-    plt.show()
+    all_zero = all(x == 0.0 for x in trunc_sums)
+    if all_zero:
+        print("All truncation sums are 0. Skipping truncation-vs-dt log plot.")
+    else:
+        plt.figure()
+        plt.plot(dts, trunc_sums, marker="o")
+        plt.xscale("log")
+        plt.yscale("log")
+        plt.xlabel("time step dt")
+        plt.ylabel("sum truncation errors")
+        plt.title("Truncation vs dt")
+        plt.grid(True, which="both", linestyle="--", linewidth=0.5)
+
+        maybe_savefig(args.save, args.outdir, "trunc_vs_dt.png")
+        if not args.no_show:
+            plt.show()
+        else:
+            plt.close()
 
     # --- Plot: runtime vs dt ---
     plt.figure()
@@ -109,7 +134,11 @@ def main():
     plt.ylabel("runtime (seconds)")
     plt.title("Runtime vs dt")
     plt.grid(True, which="both", linestyle="--", linewidth=0.5)
-    plt.show()
+    maybe_savefig(args.save, args.outdir, "runtime_vs_dt.png")
+    if not args.no_show:
+        plt.show()
+    else:
+        plt.close()
 
 
 if __name__ == "__main__":
