@@ -61,14 +61,12 @@ def test_truncation_limits_bond_dimension():
     #
     # H on first qubit + CNOT => Bell state, but here we can just do it
     # in 2 steps with 2-site gates for test simplicity.
-    #
-    # We'll do: apply (H ⊗ I) as a 2-site "gate", then apply CNOT.
+
     m = MPS.product_state("00")
 
     H = (1.0 / np.sqrt(2)) * np.array([[1, 1], [1, -1]], dtype=np.complex128)
     I2 = np.eye(2, dtype=np.complex128)
 
-    # (H ⊗ I) as 4x4
     HI = np.kron(H, I2)
 
     # CNOT

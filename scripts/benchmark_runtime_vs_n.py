@@ -24,7 +24,6 @@ def time_tebd(n, J, h, dt, steps, chi, state):
     t0 = time.perf_counter()
     for _ in range(steps):
         out = tebd_step_ising(mps, J=J, h=h, dt=dt, chi_max=chi)
-        # tebd_step_ising may return trunc or (trunc, entropy)
         _ = out[0] if isinstance(out, tuple) else out
     t1 = time.perf_counter()
 

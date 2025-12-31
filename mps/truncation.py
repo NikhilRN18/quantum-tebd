@@ -5,13 +5,7 @@ def svd_truncate(M, chi_max):
     """
     SVD factorization with truncation.
 
-    M: 2D numpy array (matrix)
-    chi_max: max number of singular values to keep
-
-    Returns:
-      U, S, Vh, trunc_error
-
-    trunc_error is the sum of discarded singular values squared
+    trunc_error is the sum of discarded singular values squared    
     divided by total sum of singular values squared (a relative error measure).
     """
     U, S, Vh = np.linalg.svd(M, full_matrices=False)

@@ -33,7 +33,6 @@ def run_tebd(n, J, h, dt, steps, chi, state):
         mags.append(magnetization_z(mps))
         if step < steps:
             out = tebd_step_ising(mps, J=J, h=h, dt=dt, chi_max=chi)
-            # tebd_step_ising may return either trunc or (trunc, entropy)
             if isinstance(out, tuple):
                 trunc = out[0]
             else:

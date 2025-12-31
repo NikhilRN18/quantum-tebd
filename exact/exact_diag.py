@@ -20,10 +20,6 @@ def kron_all(ops):
 
 
 def op_on_site(op, site, n):
-    """
-    Returns the full 2^n x 2^n operator that applies 'op' on 'site' and identity elsewhere.
-    site is 0-indexed.
-    """
     I = np.eye(2, dtype=np.complex128)
     ops = [I] * n
     ops[site] = op
@@ -39,9 +35,6 @@ def op_on_two_sites(op2, site, n):
         raise ValueError("site must satisfy 0 <= site < n-1")
 
     I = np.eye(2, dtype=np.complex128)
-
-    # Build using kron blocks:
-    # (I ⊗ ... ⊗ op2 ⊗ ... ⊗ I)
     left_ops = [I] * site
     right_ops = [I] * (n - site - 2)
 
@@ -54,9 +47,7 @@ def op_on_two_sites(op2, site, n):
 
 def tfim_hamiltonian(n, J, h):
     """
-    Build the transverse-field Ising Hamiltonian (open boundary):
         H = -J sum_{i=0}^{n-2} Z_i Z_{i+1} - h sum_{i=0}^{n-1} X_i
-    Returns a dense 2^n x 2^n matrix.
     """
     X = pauli_x()
     Z = pauli_z()
@@ -81,9 +72,7 @@ def tfim_hamiltonian(n, J, h):
 
 def evolve_state_exact(psi0, H, dt, steps):
     """
-    Evolve psi using exact matrix exponential:
         psi(t+dt) = exp(-iH dt) psi(t)
-    Returns list of psi at each step including initial (length steps+1).
     """
     U = expm(-1j * dt * H)
     psis = [psi0]
@@ -97,10 +86,6 @@ def evolve_state_exact(psi0, H, dt, steps):
 
 
 def basis_state(bitstring):
-    """
-    Returns a dense computational basis vector |bitstring> of length 2^n.
-    bitstring: string like "0101"
-    """
     if isinstance(bitstring, str):
         bits = [int(c) for c in bitstring]
     else:
@@ -117,9 +102,6 @@ def basis_state(bitstring):
 
 
 def magnetization_z_dense(psi, n):
-    """
-    Average <Z> across sites for dense state psi.
-    """
     Z = pauli_z()
     total = 0.0 + 0.0j
     for i in range(n):

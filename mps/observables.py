@@ -8,8 +8,6 @@ def magnetization_z(mps):
     Z = pauli_z()
 
     total = 0.0 + 0.0j
-
-    # Build Z_i operator by kron products (slow, but fine for first version)
     I2 = np.eye(2, dtype=np.complex128)
 
     for i in range(n):

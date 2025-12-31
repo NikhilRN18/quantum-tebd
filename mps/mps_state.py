@@ -12,31 +12,19 @@ class MPS:
     """
 
     def __init__(self, tensors):
-        self.tensors = tensors  # list of numpy arrays
+        self.tensors = tensors 
 
     @property
     def n(self):
         return len(self.tensors)
 
     def bond_dims(self):
-        """
-        Returns a list of bond dimensions between sites.
-        For an MPS with n sites, there are n+1 "bond indices":
-            b0 - A0 - b1 - A1 - ... - bn
-        with b0 = bn = 1 for open boundary conditions.
-        """
         dims = [self.tensors[0].shape[0]]
         for A in self.tensors:
             dims.append(A.shape[2])
         return dims
 
     def check_shapes(self):
-        """
-        Basic sanity check:
-        - each tensor has shape (bl, d, br)
-        - right bond of i matches left bond of i+1
-        - first left bond = 1, last right bond = 1
-        """
         if self.n == 0:
             raise ValueError("MPS must have at least 1 site.")
 
@@ -66,9 +54,6 @@ class MPS:
     def product_state(bitstring):
         """
         Create an MPS for a computational basis product state.
-
-        bitstring: iterable of 0/1 (e.g. [0,0,1,0] or "0010")
-        Returns an MPS with all bond dimensions = 1.
         """
         if isinstance(bitstring, str):
             bitstring = [int(ch) for ch in bitstring]
@@ -98,47 +83,29 @@ class MPS:
         return MPS(tensors)
 
     def to_dense(self):
-        """
-        Convert the MPS into a full state vector of size 2^n.
-        This is exponential, but useful for small n tests/debugging.
-        """
         self.check_shapes()
 
-        # Start with first tensor (1,2,b1) -> (2,b1)
         A0 = self.tensors[0]
         psi = A0[0, :, :]  # shape (2, b1)
 
         for i in range(1, self.n):
             A = self.tensors[i]  # (bi,2,bi+1)
 
-            # Contract psi (..., bi) with A (bi,2,bi+1)
-            # psi has shape (2^i, bi)
-            # result should have shape (2^i, 2, bi+1) -> reshape to (2^(i+1), bi+1)
             psi = np.tensordot(psi, A, axes=(1, 0))  # (2^i, 2, bi+1)
             psi = psi.reshape(-1, A.shape[2])  # (2^(i+1), bi+1)
 
-        # last bond dimension should be 1
         psi = psi[:, 0]
         return psi
 
     def norm(self):
-        """
-        Compute ||psi|| from the dense vector (fine for small n).
-        Later we can replace with a more efficient contraction.
-        """
         psi = self.to_dense()
         return np.linalg.norm(psi)
     
     def apply_one_site_gate(self, i, G):
-        """
-        Apply a 1-site gate G (2x2) to site i in-place.
-        G acts on the physical index.
-        """
-        A = self.tensors[i]  # (bl, 2, br)
+        A = self.tensors[i] 
         if G.shape != (2, 2):
             raise ValueError("One-site gate must be 2x2")
 
-        # Contract: A'(bl, s', br) = sum_s G(s',s) A(bl,s,br)
-        A_new = np.tensordot(G, A, axes=(1, 1))  # (2, bl, br)
-        A_new = np.transpose(A_new, (1, 0, 2))   # (bl, 2, br)
+        A_new = np.tensordot(G, A, axes=(1, 1))  
+        A_new = np.transpose(A_new, (1, 0, 2))   
         self.tensors[i] = A_new
